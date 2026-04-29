@@ -276,7 +276,10 @@ bot.onText(/🎁 Ball ishlash/, async (msg) => {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [[
-          { text: "📤 Do'stlarga ulashish", switch_inline_query: `IELTS Zone Fergana botiga qo'shiling! ${refLink}` }
+          {
+  text: "📤 Do'stlarga ulashish",
+  url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("🎓 IELTS Zone Fergana botiga qo'shiling!")}`
+}
         ]]
       }
     }
