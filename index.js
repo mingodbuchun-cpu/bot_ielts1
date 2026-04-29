@@ -78,6 +78,7 @@ function adminMenu() {
       keyboard: [
         ['👥 Jami userlar', '🏆 Top 15'],
         ['➕ Ball qosh', '➖ Ball ayir'],
+        ['📢 Hammaga xabar', '🔄 Hammanı 0 ga tushir'],
         ['🔙 Chiqish'],
       ],
       resize_keyboard: true,
@@ -97,9 +98,7 @@ async function sendSubscribeMessage(chatId) {
             { text: `📢 Kanal 1`, url: `https://t.me/${CHANNEL_1}` },
             { text: `📢 Kanal 2`, url: `https://t.me/${CHANNEL_2}` },
           ],
-          [
-            { text: '✅ Tekshirish', callback_data: 'check_sub' }
-          ]
+          [{ text: '✅ Tekshirish', callback_data: 'check_sub' }]
         ]
       }
     }
@@ -112,13 +111,10 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
   const refParam = match[1] ? match[1].trim() : null;
   const { user, isNew } = await getOrCreateUser(msg, refParam);
 
-  // Agar avval botda bo'lsa LEKIN kanalga obuna bo'lmagan bo'lsa — subscribe xabar qayta ko'rsin
   if (!isNew && !user.subscribed) {
     await sendSubscribeMessage(chatId);
     return;
   }
-
-  // Avval botda bo'lgan VA obuna bo'lgan — asosiy menyu
   if (!isNew && user.subscribed) {
     await bot.sendMessage(chatId,
       `👋 Qaytib keldingiz, <b>${user.firstName}</b>!\n\nMenulardan foydalaning:`,
@@ -126,8 +122,6 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
     );
     return;
   }
-
-  // Yangi user — subscribe xabar
   await sendSubscribeMessage(chatId);
 });
 
@@ -143,9 +137,10 @@ bot.onText(/\/adminman/, async (msg) => {
   );
 });
 
-// ─── Admin tugmalari ──────────────────────────────────────────────────────────
+// ─── Admin state ──────────────────────────────────────────────────────────────
 const adminState = new Map();
 
+// ─── Admin: Jami userlar ──────────────────────────────────────────────────────
 bot.onText(/👥 Jami userlar/, async (msg) => {
   if (!isAdmin(msg.from.id)) return;
   const count = await User.countDocuments();
@@ -155,6 +150,7 @@ bot.onText(/👥 Jami userlar/, async (msg) => {
   );
 });
 
+// ─── Admin: Top 15 ────────────────────────────────────────────────────────────
 bot.onText(/🏆 Top 15/, async (msg) => {
   if (!isAdmin(msg.from.id)) return;
   const top = await User.find().sort({ balance: -1 }).limit(15);
@@ -173,24 +169,74 @@ bot.onText(/🏆 Top 15/, async (msg) => {
   await bot.sendMessage(msg.chat.id, text, { parse_mode: 'HTML', ...adminMenu() });
 });
 
+// ─── Admin: Ball qosh (bitta yoki hammaga) ────────────────────────────────────
 bot.onText(/➕ Ball qosh/, async (msg) => {
   if (!isAdmin(msg.from.id)) return;
-  adminState.set(msg.from.id, { action: 'add_ball', step: 'ask_id' });
+  adminState.set(msg.from.id, { action: 'add_ball', step: 'choose_target' });
   await bot.sendMessage(msg.chat.id,
-    `➕ <b>Ball qo'shish</b>\n\nFoydalanuvchining Telegram ID sini yuboring:`,
-    { parse_mode: 'HTML', reply_markup: { remove_keyboard: true } }
+    `➕ <b>Ball qo'shish</b>\n\nKimga qo'shmoqchisiz?`,
+    {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '👤 Bitta userga', callback_data: 'ball_target_one_add' },
+            { text: '👥 Hammaga', callback_data: 'ball_target_all_add' },
+          ]
+        ]
+      }
+    }
   );
 });
 
+// ─── Admin: Ball ayir (bitta yoki hammadan) ───────────────────────────────────
 bot.onText(/➖ Ball ayir/, async (msg) => {
   if (!isAdmin(msg.from.id)) return;
-  adminState.set(msg.from.id, { action: 'remove_ball', step: 'ask_id' });
+  adminState.set(msg.from.id, { action: 'remove_ball', step: 'choose_target' });
   await bot.sendMessage(msg.chat.id,
-    `➖ <b>Ball ayirish</b>\n\nFoydalanuvchining Telegram ID sini yuboring:`,
+    `➖ <b>Ball ayirish</b>\n\nKimdan ayirmoqchisiz?`,
+    {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '👤 Bitta userdan', callback_data: 'ball_target_one_remove' },
+            { text: '👥 Hammadan', callback_data: 'ball_target_all_remove' },
+          ]
+        ]
+      }
+    }
+  );
+});
+
+// ─── Admin: Hammaga xabar ─────────────────────────────────────────────────────
+bot.onText(/📢 Hammaga xabar/, async (msg) => {
+  if (!isAdmin(msg.from.id)) return;
+  adminState.set(msg.from.id, { action: 'broadcast', step: 'ask_message' });
+  await bot.sendMessage(msg.chat.id,
+    `📢 <b>Hammaga xabar yuborish</b>\n\nYubormoqchi bo'lgan xabaringizni yozing:\n\n<i>(HTML teglari ishlaydi: &lt;b&gt;, &lt;i&gt;, &lt;a href=""&gt;)</i>`,
     { parse_mode: 'HTML', reply_markup: { remove_keyboard: true } }
   );
 });
 
+// ─── Admin: Hammanı 0 ga tushir ───────────────────────────────────────────────
+bot.onText(/🔄 Hammanı 0 ga tushir/, async (msg) => {
+  if (!isAdmin(msg.from.id)) return;
+  await bot.sendMessage(msg.chat.id,
+    `⚠️ <b>Diqqat!</b>\n\nBarcha foydalanuvchilarning bali <b>0 ga</b> tushiriladi.\n\nRostan ham davom ettirasizmi?`,
+    {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [[
+          { text: '✅ Ha, tushir', callback_data: 'reset_all_confirm' },
+          { text: '❌ Bekor qilish', callback_data: 'reset_all_cancel' },
+        ]]
+      }
+    }
+  );
+});
+
+// ─── Admin: Chiqish ───────────────────────────────────────────────────────────
 bot.onText(/🔙 Chiqish/, async (msg) => {
   if (!isAdmin(msg.from.id)) return;
   adminState.delete(msg.from.id);
@@ -257,6 +303,7 @@ bot.on('callback_query', async (query) => {
   const userId = query.from.id;
   const data   = query.data;
 
+  // ── Obuna tekshirish ────────────────────────────────────────────────────────
   if (data === 'check_sub') {
     const user = await User.findOne({ telegramId: userId });
     if (!user) {
@@ -297,13 +344,11 @@ bot.on('callback_query', async (query) => {
       }
     }
     await user.save();
-
     try {
       await bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
         chat_id: chatId, message_id: query.message.message_id
       });
     } catch {}
-
     await bot.sendMessage(chatId,
       `✅ <b>Obuna tasdiqlandi!</b>${bonusText}\n\n💰 Joriy balingiz: <b>${user.balance} ball</b>\n\n👇 Menyudan foydalaning:`,
       { parse_mode: 'HTML', ...mainMenu() }
@@ -311,11 +356,11 @@ bot.on('callback_query', async (query) => {
     return;
   }
 
+  // ── CDI sotib olish ─────────────────────────────────────────────────────────
   if (data === 'buy_cdi') {
     await bot.answerCallbackQuery(query.id);
     const user = await User.findOne({ telegramId: userId });
     if (!user) { await bot.sendMessage(chatId, 'Iltimos /start ni bosing.'); return; }
-
     if (user.balance >= CDI_PRICE) {
       user.balance     -= CDI_PRICE;
       user.hasPurchased = true;
@@ -341,74 +386,201 @@ bot.on('callback_query', async (query) => {
     }
     return;
   }
+
+  // ── Admin: Ball maqsadi tanlash (bitta user) ────────────────────────────────
+  if (data === 'ball_target_one_add' || data === 'ball_target_one_remove') {
+    if (!isAdmin(userId)) return;
+    await bot.answerCallbackQuery(query.id);
+    const action = data === 'ball_target_one_add' ? 'add_ball' : 'remove_ball';
+    adminState.set(userId, { action, step: 'ask_id', target: 'one' });
+    await bot.sendMessage(chatId,
+      `👤 Foydalanuvchining <b>Telegram ID</b> sini yuboring:`,
+      { parse_mode: 'HTML', reply_markup: { remove_keyboard: true } }
+    );
+    return;
+  }
+
+  // ── Admin: Ball maqsadi tanlash (hammaga) ──────────────────────────────────
+  if (data === 'ball_target_all_add' || data === 'ball_target_all_remove') {
+    if (!isAdmin(userId)) return;
+    await bot.answerCallbackQuery(query.id);
+    const action = data === 'ball_target_all_add' ? 'add_ball' : 'remove_ball';
+    adminState.set(userId, { action, step: 'ask_amount', target: 'all' });
+    const label = action === 'add_ball' ? "qo'shish" : 'ayirish';
+    await bot.sendMessage(chatId,
+      `👥 <b>Barcha foydalanuvchilarga</b> necha ball ${label}ni kiriting:`,
+      { parse_mode: 'HTML', reply_markup: { remove_keyboard: true } }
+    );
+    return;
+  }
+
+  // ── Admin: Hammanı 0 ga tushir tasdiqlash ──────────────────────────────────
+  if (data === 'reset_all_confirm') {
+    if (!isAdmin(userId)) return;
+    await bot.answerCallbackQuery(query.id);
+    await bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+      chat_id: chatId, message_id: query.message.message_id
+    });
+    const result = await User.updateMany({}, { $set: { balance: 0 } });
+    await bot.sendMessage(chatId,
+      `✅ <b>Barcha foydalanuvchilarning bali 0 ga tushirildi!</b>\n\nJami: ${result.modifiedCount} ta user`,
+      { parse_mode: 'HTML', ...adminMenu() }
+    );
+    return;
+  }
+
+  if (data === 'reset_all_cancel') {
+    if (!isAdmin(userId)) return;
+    await bot.answerCallbackQuery(query.id, { text: 'Bekor qilindi.' });
+    await bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+      chat_id: chatId, message_id: query.message.message_id
+    });
+    await bot.sendMessage(chatId, '❌ Bekor qilindi.', adminMenu());
+    return;
+  }
 });
 
-// ─── Admin holatlari uchun xabar handler ──────────────────────────────────────
+// ─── Xabar handler (admin holatlari + oddiy xabarlar) ────────────────────────
 bot.on('message', async (msg) => {
-  if (!msg.text || !isAdmin(msg.from.id)) return;
-  const text  = msg.text.trim();
-  const state = adminState.get(msg.from.id);
+  if (!msg.text) return;
+  const text   = msg.text.trim();
+  const userId = msg.from.id;
+  const chatId = msg.chat.id;
+
+  if (!isAdmin(userId)) return;
+
+  const state = adminState.get(userId);
   if (!state) return;
 
-  // Menyu tugmalarini o'tkazish
-  const menuButtons = ['👥 Jami userlar','🏆 Top 15','➕ Ball qosh','➖ Ball ayir','🔙 Chiqish',
-                       '🛒 CDI sotib olish','👤 Hisobim','🎁 Ball ishlash'];
+  // Menyu tugmalarini o'tkazib yuborish
+  const menuButtons = [
+    '👥 Jami userlar','🏆 Top 15','➕ Ball qosh','➖ Ball ayir',
+    '📢 Hammaga xabar','🔄 Hammanı 0 ga tushir','🔙 Chiqish',
+    '🛒 CDI sotib olish','👤 Hisobim','🎁 Ball ishlash'
+  ];
   if (menuButtons.includes(text) || text.startsWith('/')) return;
 
-  if (state.step === 'ask_id') {
+  // ── Broadcast: xabar matni kutilmoqda ──────────────────────────────────────
+  if (state.action === 'broadcast' && state.step === 'ask_message') {
+    adminState.delete(userId);
+    const users = await User.find({}, 'telegramId');
+    let sent = 0, failed = 0;
+    await bot.sendMessage(chatId,
+      `📤 <b>Xabar yuborilmoqda...</b>\nJami: ${users.length} ta user`,
+      { parse_mode: 'HTML' }
+    );
+    for (const u of users) {
+      try {
+        await bot.sendMessage(u.telegramId, text, { parse_mode: 'HTML' });
+        sent++;
+      } catch { failed++; }
+      // Telegram flood limitiga tushmaslik uchun kichik delay
+      await new Promise(r => setTimeout(r, 35));
+    }
+    await bot.sendMessage(chatId,
+      `✅ <b>Xabar yuborishni yakunlandi!</b>\n\n✔️ Muvaffaqiyatli: ${sent} ta\n❌ Yetkazilmadi: ${failed} ta`,
+      { parse_mode: 'HTML', ...adminMenu() }
+    );
+    return;
+  }
+
+  // ── Bitta userga: ID so'rash ────────────────────────────────────────────────
+  if (state.step === 'ask_id' && state.target === 'one') {
     const targetId = Number(text);
-    if (isNaN(targetId)) { await bot.sendMessage(msg.chat.id, "❌ Noto'g'ri ID. Raqam kiriting:"); return; }
+    if (isNaN(targetId)) {
+      await bot.sendMessage(chatId, "❌ Noto'g'ri ID. Raqam kiriting:");
+      return;
+    }
     const targetUser = await User.findOne({ telegramId: targetId });
     if (!targetUser) {
-      await bot.sendMessage(msg.chat.id, `❌ ID: ${targetId} — foydalanuvchi topilmadi.`, adminMenu());
-      adminState.delete(msg.from.id);
+      await bot.sendMessage(chatId, `❌ ID: ${targetId} — foydalanuvchi topilmadi.`, adminMenu());
+      adminState.delete(userId);
       return;
     }
     const name = [targetUser.firstName, targetUser.lastName].filter(Boolean).join(' ') || 'Nomsiz';
-    adminState.set(msg.from.id, { ...state, step: 'ask_amount', targetId, targetName: name });
-    await bot.sendMessage(msg.chat.id,
-      `👤 <b>${name}</b> (ID: ${targetId})\n💰 Joriy balans: <b>${targetUser.balance} ball</b>\n\nNecha ball ${state.action === 'add_ball' ? "qo'shish" : 'ayirish'}ni kiriting:`,
+    adminState.set(userId, { ...state, step: 'ask_amount', targetId, targetName: name });
+    const label = state.action === 'add_ball' ? "qo'shish" : 'ayirish';
+    await bot.sendMessage(chatId,
+      `👤 <b>${name}</b> (ID: ${targetId})\n💰 Joriy balans: <b>${targetUser.balance} ball</b>\n\nNecha ball ${label}ni kiriting:`,
       { parse_mode: 'HTML' }
     );
     return;
   }
 
+  // ── Miqdor so'rash (bitta yoki hammaga) ────────────────────────────────────
   if (state.step === 'ask_amount') {
     const amount = Number(text);
-    if (isNaN(amount) || amount <= 0) { await bot.sendMessage(msg.chat.id, "❌ Noto'g'ri miqdor. Musbat raqam kiriting:"); return; }
-    const targetUser = await User.findOne({ telegramId: state.targetId });
-    if (!targetUser) {
-      await bot.sendMessage(msg.chat.id, '❌ Foydalanuvchi topilmadi.', adminMenu());
-      adminState.delete(msg.from.id);
+    if (isNaN(amount) || amount <= 0) {
+      await bot.sendMessage(chatId, "❌ Noto'g'ri miqdor. Musbat raqam kiriting:");
       return;
     }
 
-    if (state.action === 'add_ball') {
-      targetUser.balance += amount;
-      await targetUser.save();
-      await bot.sendMessage(msg.chat.id,
-        `✅ <b>${state.targetName}</b> ga <b>+${amount} ball</b> qo'shildi.\n💰 Yangi balans: <b>${targetUser.balance} ball</b>`,
-        { parse_mode: 'HTML', ...adminMenu() }
-      );
-      try { await bot.sendMessage(state.targetId, `🎉 Hisobingizga admin tomonidan <b>+${amount} ball</b> qo'shildi!\n💰 Balansiz: <b>${targetUser.balance} ball</b>`, { parse_mode: 'HTML' }); } catch {}
-    } else {
-      if (targetUser.balance < amount) {
-        await bot.sendMessage(msg.chat.id,
-          `❌ Foydalanuvchida faqat <b>${targetUser.balance} ball</b> bor. ${amount} ayirib bo'lmaydi.`,
+    // Hammaga
+    if (state.target === 'all') {
+      adminState.delete(userId);
+      if (state.action === 'add_ball') {
+        const result = await User.updateMany({}, { $inc: { balance: amount } });
+        await bot.sendMessage(chatId,
+          `✅ <b>Barcha foydalanuvchilarga +${amount} ball qo'shildi!</b>\n\nJami: ${result.modifiedCount} ta user`,
           { parse_mode: 'HTML', ...adminMenu() }
         );
-        adminState.delete(msg.from.id);
+      } else {
+        // Manfiy bo'lib ketmasin
+        await User.updateMany({ balance: { $gte: amount } }, { $inc: { balance: -amount } });
+        await User.updateMany({ balance: { $lt: amount } }, { $set: { balance: 0 } });
+        const total = await User.countDocuments();
+        await bot.sendMessage(chatId,
+          `✅ <b>Barcha foydalanuvchilardan -${amount} ball ayirildi!</b>\n\nJami: ${total} ta user\n<i>(Bali yetmaganlar 0 ga tushirildi)</i>`,
+          { parse_mode: 'HTML', ...adminMenu() }
+        );
+      }
+      return;
+    }
+
+    // Bitta userga
+    if (state.target === 'one') {
+      adminState.delete(userId);
+      const targetUser = await User.findOne({ telegramId: state.targetId });
+      if (!targetUser) {
+        await bot.sendMessage(chatId, '❌ Foydalanuvchi topilmadi.', adminMenu());
         return;
       }
-      targetUser.balance -= amount;
-      await targetUser.save();
-      await bot.sendMessage(msg.chat.id,
-        `✅ <b>${state.targetName}</b> dan <b>-${amount} ball</b> ayirildi.\n💰 Yangi balans: <b>${targetUser.balance} ball</b>`,
-        { parse_mode: 'HTML', ...adminMenu() }
-      );
-      try { await bot.sendMessage(state.targetId, `⚠️ Hisobingizdan admin tomonidan <b>-${amount} ball</b> ayirildi.\n💰 Balansiz: <b>${targetUser.balance} ball</b>`, { parse_mode: 'HTML' }); } catch {}
+      if (state.action === 'add_ball') {
+        targetUser.balance += amount;
+        await targetUser.save();
+        await bot.sendMessage(chatId,
+          `✅ <b>${state.targetName}</b> ga <b>+${amount} ball</b> qo'shildi.\n💰 Yangi balans: <b>${targetUser.balance} ball</b>`,
+          { parse_mode: 'HTML', ...adminMenu() }
+        );
+        try {
+          await bot.sendMessage(state.targetId,
+            `🎉 Hisobingizga admin tomonidan <b>+${amount} ball</b> qo'shildi!\n💰 Balansiz: <b>${targetUser.balance} ball</b>`,
+            { parse_mode: 'HTML' }
+          );
+        } catch {}
+      } else {
+        if (targetUser.balance < amount) {
+          await bot.sendMessage(chatId,
+            `❌ Foydalanuvchida faqat <b>${targetUser.balance} ball</b> bor. ${amount} ayirib bo'lmaydi.`,
+            { parse_mode: 'HTML', ...adminMenu() }
+          );
+          return;
+        }
+        targetUser.balance -= amount;
+        await targetUser.save();
+        await bot.sendMessage(chatId,
+          `✅ <b>${state.targetName}</b> dan <b>-${amount} ball</b> ayirildi.\n💰 Yangi balans: <b>${targetUser.balance} ball</b>`,
+          { parse_mode: 'HTML', ...adminMenu() }
+        );
+        try {
+          await bot.sendMessage(state.targetId,
+            `⚠️ Hisobingizdan admin tomonidan <b>-${amount} ball</b> ayirildi.\n💰 Balansiz: <b>${targetUser.balance} ball</b>`,
+            { parse_mode: 'HTML' }
+          );
+        } catch {}
+      }
+      return;
     }
-    adminState.delete(msg.from.id);
   }
 });
 
