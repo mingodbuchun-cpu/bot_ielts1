@@ -55,7 +55,7 @@ async function checkSubscription(userId) {
       bot.getChatMember(`@${CHANNEL_1}`, userId),
       bot.getChatMember(`@${CHANNEL_2}`, userId),
     ]);
-    const ok = s => ['member','administrator','creator'].includes(s.status);
+    const ok = s => ['member', 'administrator', 'creator'].includes(s.status);
     return ok(s1) && ok(s2);
   } catch { return false; }
 }
@@ -158,7 +158,7 @@ bot.onText(/🏆 Top 15/, async (msg) => {
     await bot.sendMessage(msg.chat.id, "Hali foydalanuvchilar yo'q.", adminMenu());
     return;
   }
-  const medals = ['🥇','🥈','🥉'];
+  const medals = ['🥇', '🥈', '🥉'];
   let text = `🏆 <b>Top 15 — Eng ko'p ball to'plaganlar</b>\n\n`;
   top.forEach((u, i) => {
     const medal = medals[i] || `${i + 1}.`;
@@ -169,7 +169,7 @@ bot.onText(/🏆 Top 15/, async (msg) => {
   await bot.sendMessage(msg.chat.id, text, { parse_mode: 'HTML', ...adminMenu() });
 });
 
-// ─── Admin: Ball qosh (bitta yoki hammaga) ────────────────────────────────────
+// ─── Admin: Ball qosh ─────────────────────────────────────────────────────────
 bot.onText(/➕ Ball qosh/, async (msg) => {
   if (!isAdmin(msg.from.id)) return;
   adminState.set(msg.from.id, { action: 'add_ball', step: 'choose_target' });
@@ -178,18 +178,16 @@ bot.onText(/➕ Ball qosh/, async (msg) => {
     {
       parse_mode: 'HTML',
       reply_markup: {
-        inline_keyboard: [
-          [
-            { text: '👤 Bitta userga', callback_data: 'ball_target_one_add' },
-            { text: '👥 Hammaga', callback_data: 'ball_target_all_add' },
-          ]
-        ]
+        inline_keyboard: [[
+          { text: '👤 Bitta userga', callback_data: 'ball_target_one_add' },
+          { text: '👥 Hammaga',      callback_data: 'ball_target_all_add' },
+        ]]
       }
     }
   );
 });
 
-// ─── Admin: Ball ayir (bitta yoki hammadan) ───────────────────────────────────
+// ─── Admin: Ball ayir ─────────────────────────────────────────────────────────
 bot.onText(/➖ Ball ayir/, async (msg) => {
   if (!isAdmin(msg.from.id)) return;
   adminState.set(msg.from.id, { action: 'remove_ball', step: 'choose_target' });
@@ -198,12 +196,10 @@ bot.onText(/➖ Ball ayir/, async (msg) => {
     {
       parse_mode: 'HTML',
       reply_markup: {
-        inline_keyboard: [
-          [
-            { text: '👤 Bitta userdan', callback_data: 'ball_target_one_remove' },
-            { text: '👥 Hammadan', callback_data: 'ball_target_all_remove' },
-          ]
-        ]
+        inline_keyboard: [[
+          { text: '👤 Bitta userdan', callback_data: 'ball_target_one_remove' },
+          { text: '👥 Hammadan',      callback_data: 'ball_target_all_remove' },
+        ]]
       }
     }
   );
@@ -214,7 +210,8 @@ bot.onText(/📢 Hammaga xabar/, async (msg) => {
   if (!isAdmin(msg.from.id)) return;
   adminState.set(msg.from.id, { action: 'broadcast', step: 'ask_message' });
   await bot.sendMessage(msg.chat.id,
-    `📢 <b>Hammaga xabar yuborish</b>\n\nYubormoqchi bo'lgan xabaringizni yozing:\n\n<i>(HTML teglari ishlaydi: &lt;b&gt;, &lt;i&gt;, &lt;a href=""&gt;)</i>`,
+    `📢 <b>Hammaga xabar yuborish</b>\n\nYubormoqchi bo'lgan xabaringizni yozing:\n\n` +
+    `<i>(HTML teglari ishlaydi: &lt;b&gt;, &lt;i&gt;, &lt;a href=""&gt;)\nRasm yoki video ham yuborishingiz mumkin!</i>`,
     { parse_mode: 'HTML', reply_markup: { remove_keyboard: true } }
   );
 });
@@ -228,8 +225,8 @@ bot.onText(/🔄 Hammanı 0 ga tushir/, async (msg) => {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [[
-          { text: '✅ Ha, tushir', callback_data: 'reset_all_confirm' },
-          { text: '❌ Bekor qilish', callback_data: 'reset_all_cancel' },
+          { text: '✅ Ha, tushir',    callback_data: 'reset_all_confirm' },
+          { text: '❌ Bekor qilish', callback_data: 'reset_all_cancel'  },
         ]]
       }
     }
@@ -275,12 +272,10 @@ bot.onText(/🎁 Ball ishlash/, async (msg) => {
     {
       parse_mode: 'HTML',
       reply_markup: {
-        inline_keyboard: [[
-          {
-            text: "📤 Do'stlarga ulashish",
-            url: `https://t.me/share/url?url=${encodeURIComponent("🎓 IELTS Zone Fergana botiga qo'shiling!")}&text=${encodeURIComponent(refLink)}`
-          }
-        ]]
+        inline_keyboard: [[{
+          text: "📤 Do'stlarga ulashish",
+          url: `https://t.me/share/url?url=${encodeURIComponent("🎓 IELTS Zone Fergana botiga qo'shiling!")}&text=${encodeURIComponent(refLink)}`
+        }]]
       }
     }
   );
@@ -326,8 +321,8 @@ bot.on('callback_query', async (query) => {
     user.subscribed = true;
     let bonusText = '';
     if (!user.startBonus) {
-      user.balance   += 5;
-      user.startBonus = true;
+      user.balance    += 5;
+      user.startBonus  = true;
       bonusText = `\n\n🎉 <b>Tabriklaymiz!</b> Kanallarga obuna bo'lganingiz uchun sizga <b>5 ball</b> taqdim qilindi!`;
       if (user.referredBy) {
         const alreadyLogged = await ReferralLog.findOne({ newUserId: userId });
@@ -391,21 +386,24 @@ bot.on('callback_query', async (query) => {
       );
       try {
         await bot.sendMessage(ADMIN_ID,
-          `🛒 <b>Yangi CDI xaridi!</b>\n\n👤 Ism: ${name}\n🔗 Username: ${uname}\n🆔 Telegram ID: <code>${userId}</code>\n📞 Telefon: ${user.phone || 'Kiritilmagan'}\n⏰ Vaqt: ${new Date().toLocaleString('uz-UZ')}`,
+          `🛒 <b>Yangi CDI xaridi!</b>\n\n👤 Ism: ${name}\n🔗 Username: ${uname}\n` +
+          `🆔 Telegram ID: <code>${userId}</code>\n📞 Telefon: ${user.phone || 'Kiritilmagan'}\n` +
+          `⏰ Vaqt: ${new Date().toLocaleString('uz-UZ')}`,
           { parse_mode: 'HTML' }
         );
       } catch (e) { console.error('Adminga xabar xato:', e.message); }
     } else {
       const needed = CDI_PRICE - user.balance;
       await bot.sendMessage(chatId,
-        `❌ <b>Ball yetarli emas!</b>\n\nKerakli: ${CDI_PRICE} ball\nSizda: ${user.balance} ball\n<b>${needed} ball yetmayabdi</b>\n\n💡 Do'stlarni taklif qilib ball to'plang 👉 🎁 Ball ishlash`,
+        `❌ <b>Ball yetarli emas!</b>\n\nKerakli: ${CDI_PRICE} ball\nSizda: ${user.balance} ball\n` +
+        `<b>${needed} ball yetmayabdi</b>\n\n💡 Do'stlarni taklif qilib ball to'plang 👉 🎁 Ball ishlash`,
         { parse_mode: 'HTML', ...mainMenu() }
       );
     }
     return;
   }
 
-  // ── Admin: Ball maqsadi tanlash (bitta user) ────────────────────────────────
+  // ── Admin: Ball maqsadi — bitta user ────────────────────────────────────────
   if (data === 'ball_target_one_add' || data === 'ball_target_one_remove') {
     if (!isAdmin(userId)) return;
     await bot.answerCallbackQuery(query.id);
@@ -418,7 +416,7 @@ bot.on('callback_query', async (query) => {
     return;
   }
 
-  // ── Admin: Ball maqsadi tanlash (hammaga) ──────────────────────────────────
+  // ── Admin: Ball maqsadi — hammaga ───────────────────────────────────────────
   if (data === 'ball_target_all_add' || data === 'ball_target_all_remove') {
     if (!isAdmin(userId)) return;
     await bot.answerCallbackQuery(query.id);
@@ -432,7 +430,7 @@ bot.on('callback_query', async (query) => {
     return;
   }
 
-  // ── Admin: Hammanı 0 ga tushir tasdiqlash ──────────────────────────────────
+  // ── Admin: Reset tasdiqlash ──────────────────────────────────────────────────
   if (data === 'reset_all_confirm') {
     if (!isAdmin(userId)) return;
     await bot.answerCallbackQuery(query.id);
@@ -458,10 +456,8 @@ bot.on('callback_query', async (query) => {
   }
 });
 
-// ─── Xabar handler (admin holatlari + oddiy xabarlar) ────────────────────────
+// ─── Admin xabar handler ──────────────────────────────────────────────────────
 bot.on('message', async (msg) => {
-  if (!msg.text) return;
-  const text   = msg.text.trim();
   const userId = msg.from.id;
   const chatId = msg.chat.id;
 
@@ -470,31 +466,52 @@ bot.on('message', async (msg) => {
   const state = adminState.get(userId);
   if (!state) return;
 
-  // Menyu tugmalarini o'tkazib yuborish
+  const text = msg.text?.trim() || msg.caption?.trim() || '';
+
   const menuButtons = [
-    '👥 Jami userlar','🏆 Top 15','➕ Ball qosh','➖ Ball ayir',
-    '📢 Hammaga xabar','🔄 Hammanı 0 ga tushir','🔙 Chiqish',
-    '🛒 CDI sotib olish','👤 Hisobim','🎁 Ball ishlash'
+    '👥 Jami userlar', '🏆 Top 15', '➕ Ball qosh', '➖ Ball ayir',
+    '📢 Hammaga xabar', '🔄 Hammanı 0 ga tushir', '🔙 Chiqish',
+    '🛒 CDI sotib olish', '👤 Hisobim', '🎁 Ball ishlash'
   ];
   if (menuButtons.includes(text) || text.startsWith('/')) return;
 
-  // ── Broadcast: xabar matni kutilmoqda ──────────────────────────────────────
+  // ── Broadcast ────────────────────────────────────────────────────────────────
   if (state.action === 'broadcast' && state.step === 'ask_message') {
     adminState.delete(userId);
     const users = await User.find({}, 'telegramId');
     let sent = 0, failed = 0;
+
     await bot.sendMessage(chatId,
       `📤 <b>Xabar yuborilmoqda...</b>\nJami: ${users.length} ta user`,
       { parse_mode: 'HTML' }
     );
+
     for (const u of users) {
       try {
-        await bot.sendMessage(u.telegramId, text, { parse_mode: 'HTML' });
+        if (msg.photo) {
+          const fileId = msg.photo[msg.photo.length - 1].file_id;
+          await bot.sendPhoto(u.telegramId, fileId, {
+            caption: msg.caption || '',
+            parse_mode: 'HTML',
+          });
+        } else if (msg.video) {
+          await bot.sendVideo(u.telegramId, msg.video.file_id, {
+            caption: msg.caption || '',
+            parse_mode: 'HTML',
+          });
+        } else if (msg.document) {
+          await bot.sendDocument(u.telegramId, msg.document.file_id, {
+            caption: msg.caption || '',
+            parse_mode: 'HTML',
+          });
+        } else if (msg.text) {
+          await bot.sendMessage(u.telegramId, msg.text, { parse_mode: 'HTML' });
+        }
         sent++;
       } catch { failed++; }
-      // Telegram flood limitiga tushmaslik uchun kichik delay
       await new Promise(r => setTimeout(r, 35));
     }
+
     await bot.sendMessage(chatId,
       `✅ <b>Xabar yuborishni yakunlandi!</b>\n\n✔️ Muvaffaqiyatli: ${sent} ta\n❌ Yetkazilmadi: ${failed} ta`,
       { parse_mode: 'HTML', ...adminMenu() }
@@ -502,7 +519,7 @@ bot.on('message', async (msg) => {
     return;
   }
 
-  // ── Bitta userga: ID so'rash ────────────────────────────────────────────────
+  // ── Bitta userga ID so'rash ───────────────────────────────────────────────────
   if (state.step === 'ask_id' && state.target === 'one') {
     const targetId = Number(text);
     if (isNaN(targetId)) {
@@ -525,7 +542,7 @@ bot.on('message', async (msg) => {
     return;
   }
 
-  // ── Miqdor so'rash (bitta yoki hammaga) ────────────────────────────────────
+  // ── Miqdor kiritish ───────────────────────────────────────────────────────────
   if (state.step === 'ask_amount') {
     const amount = Number(text);
     if (isNaN(amount) || amount <= 0) {
@@ -543,9 +560,8 @@ bot.on('message', async (msg) => {
           { parse_mode: 'HTML', ...adminMenu() }
         );
       } else {
-        // Manfiy bo'lib ketmasin
         await User.updateMany({ balance: { $gte: amount } }, { $inc: { balance: -amount } });
-        await User.updateMany({ balance: { $lt: amount } }, { $set: { balance: 0 } });
+        await User.updateMany({ balance: { $lt:  amount } }, { $set: { balance: 0 } });
         const total = await User.countDocuments();
         await bot.sendMessage(chatId,
           `✅ <b>Barcha foydalanuvchilardan -${amount} ball ayirildi!</b>\n\nJami: ${total} ta user\n<i>(Bali yetmaganlar 0 ga tushirildi)</i>`,
@@ -579,7 +595,7 @@ bot.on('message', async (msg) => {
       } else {
         if (targetUser.balance < amount) {
           await bot.sendMessage(chatId,
-            `❌ Foydalanuvchida faqat <b>${targetUser.balance} ball</b> mavjud. ${amount} ayirib bo'lmaydi.`,
+            `❌ Foydalanuvchida faqat <b>${targetUser.balance} ball</b> mavjud. ${amount} ball ayirib bo'lmaydi.`,
             { parse_mode: 'HTML', ...adminMenu() }
           );
           return;
@@ -602,26 +618,29 @@ bot.on('message', async (msg) => {
   }
 });
 
-
 // ─── Kontakt qabul qilish ─────────────────────────────────────────────────────
 bot.on('message', async (msg) => {
   if (!msg.contact) return;
   const chatId = msg.chat.id;
   const userId = msg.from.id;
 
-  // Faqat o'zining kontaktini qabul qilish
   if (msg.contact.user_id !== userId) {
     await bot.sendMessage(chatId,
       "❌ Iltimos, faqat o'z telefon raqamingizni yuboring.",
-      { reply_markup: { keyboard: [[{ text: '📱 Kontakt ulashish', request_contact: true }]], resize_keyboard: true, one_time_keyboard: true } }
+      {
+        reply_markup: {
+          keyboard: [[{ text: '📱 Kontakt ulashish', request_contact: true }]],
+          resize_keyboard: true,
+          one_time_keyboard: true,
+        }
+      }
     );
     return;
   }
 
-  const phone = msg.contact.phone_number;
-
-  // +998 bilan boshlanishini tekshirish
+  const phone      = msg.contact.phone_number;
   const cleanPhone = phone.replace(/[^0-9+]/g, '');
+
   if (!cleanPhone.startsWith('+998') && !cleanPhone.startsWith('998')) {
     await bot.sendMessage(chatId,
       "🚫 <b>Kechirasiz, botdan faqat O'zbekiston fuqarolari foydalanishi mumkin.</b>\n\nSizning raqamingiz O'zbekiston raqami emas.",
@@ -630,7 +649,6 @@ bot.on('message', async (msg) => {
     return;
   }
 
-  // Raqamni saqlash
   const user = await User.findOne({ telegramId: userId });
   if (!user) { await bot.sendMessage(chatId, 'Iltimos /start ni bosing.'); return; }
 
@@ -643,5 +661,6 @@ bot.on('message', async (msg) => {
   );
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
 bot.on('polling_error', (err) => console.error('Polling xato:', err.message));
 console.log('🤖 Bot ishga tushdi...');
