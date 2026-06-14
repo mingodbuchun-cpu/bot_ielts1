@@ -488,25 +488,9 @@ bot.on('message', async (msg) => {
 
     for (const u of users) {
       try {
-        if (msg.photo) {
-          const fileId = msg.photo[msg.photo.length - 1].file_id;
-          await bot.sendPhoto(u.telegramId, fileId, {
-            caption: msg.caption || '',
-            parse_mode: 'HTML',
-          });
-        } else if (msg.video) {
-          await bot.sendVideo(u.telegramId, msg.video.file_id, {
-            caption: msg.caption || '',
-            parse_mode: 'HTML',
-          });
-        } else if (msg.document) {
-          await bot.sendDocument(u.telegramId, msg.document.file_id, {
-            caption: msg.caption || '',
-            parse_mode: 'HTML',
-          });
-        } else if (msg.text) {
-          await bot.sendMessage(u.telegramId, msg.text, { parse_mode: 'HTML' });
-        }
+        // copyMessage xabarni aynan nusxa qiladi: link, formatlash,
+        // inline tugmalar, rasm/video/fayl — hammasi saqlanadi.
+        await bot.copyMessage(u.telegramId, chatId, msg.message_id);
         sent++;
       } catch { failed++; }
       await new Promise(r => setTimeout(r, 35));
